@@ -4,8 +4,8 @@ With the introduction of Tanzu Application Platform version 1.2, VMware and Amaz
 
 As part of this effort, several of the services that comprise the Tanzu Application Platform were enhanced to support using an [IAM role bound to a Kubernetes service account](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) for authentication rather than the typical username and password stored in a kubernetes secret strategy.  This is important when using the Elastic Container Registry (ECR) because authenticating to ECR is a two step process:  
 
-# Retrieve a token using your AWS credentials
-# Use the token to authenticate to the registry  
+1. Retrieve a token using your AWS credentials
+1. Use the token to authenticate to the registry  
 
 To increase security posture, the token has a lifetime of 12 hours.  This makes storing it as a secret for a service impracticle, as it would have to be refereshed every 12 hours.
 
@@ -63,7 +63,8 @@ export AWS_REGION=us-west-2
 
 Where:
 
-|| Variable || Description ||
+| Variable | Description |
+| -------- | ----------- |
 | ACCOUNT_ID | Your AWS account ID |
 | AWS_REGION | The AWS region you are going to deploy to |
 
