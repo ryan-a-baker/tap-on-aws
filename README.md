@@ -24,10 +24,14 @@ While these enhancements were made for the Quick Start, the good news is, those 
 
 This step is optional if you already have an existing EKS Cluster.  Note, however that it has to be at least version 1.22 and have the OIDC authentication enabled.
 
-```eksctl create cluster --name tap-aws --region us-west-1 --managed --instance-types t3.large --version 1.22 --with-oidc -N 4```
+```
+eksctl create cluster --name tap-aws --region us-west-1 --managed --instance-types t3.large --version 1.22 --with-oidc -N 4
+```
 
 ## Create the Container Registries
 
 ECR requires the container registries to be precreated.  Let’s precreate the registries required:
 
-```aws ecr create-repository tap-build-service-images```
+```
+aws ecr create-repository tap-build-service-images
+```
