@@ -6,21 +6,25 @@ As part of this effort, several of the services that make up the Tanzu Applicati
 
 While these enhancements were made for the Quick Start, the good news is, those who wish to deploy the Tanzu Application Platform on top of EKS and use ECR as the container registry can take advantage of them as well. Let’s walk through how we can deploy the Tanzu Application Platform on AWS EKS using ECR.
 
+Prerequisites
+Create an EKS Cluster
+Create the container registries
+Enable OIDC authentication on EKS Cluster
+Create the IAM Roles
+Configure the Tanzu Application Platform Values
+Deploy a workload
+
 # Prerequisites
+
+## AWS CLI
+
+This walkthrough will use the AWS CLI to both query and configure resources in AWS such as IAM roles.
+
+To install the AWS CLI, use the [following guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+
+## EKSCTL
+
 # Create an EKS Cluster
-# Create the container registries
-# Enable OIDC authentication on EKS Cluster
-# Create the IAM Roles
-# Configure the Tanzu Application Platform Values
-# Deploy a workload
-
-## Prerequisites
-
-### AWS CLI
-
-### EKSCTL
-
-## Create an EKS Cluster
 
 This step is optional if you already have an existing EKS Cluster.  Note, however that it has to be at least version 1.22 and have the OIDC authentication enabled.
 
@@ -28,7 +32,7 @@ This step is optional if you already have an existing EKS Cluster.  Note, howeve
 eksctl create cluster --name tap-aws --region us-west-1 --managed --instance-types t3.large --version 1.22 --with-oidc -N 4
 ```
 
-## Create the Container Registries
+# Create the Container Registries
 
 ECR requires the container registries to be precreated.  Let’s precreate the registries required:
 
