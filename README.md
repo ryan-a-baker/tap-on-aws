@@ -360,3 +360,62 @@ tanzu package repository add tanzu-tap-repository \
   --url ${INSTALL_REGISTRY_HOSTNAME}/TARGET-REPOSITORY/tap-packages:$TAP_VERSION \
   --namespace tap-install
 ```
+
+# Build Configuration for the Tanzu Application Platform
+
+Before we install the Tanzu Application Platform, we need to generate the configuration to use to install it.  
+
+Let's build the configuration file and populate it with variables.
+
+cat << EOF > build-service-policy.json
+profile: full
+ceip_policy_disclosed: true
+
+buildservice:
+  kp_default_repository: $ACCOUND_ID.dkr.ecr.$AWS_REGION.amazonaws.com/tbs
+  # Specify the ARN created earlier for the build service
+  kp_default_repository_aws_iam_role_arn: "arn:aws:iam::$ACCOUND_ID:role/tap-build-service"
+
+ootb_templates:
+  # Allow the config writer service to use cloud based iaas authentication
+  iaas_auth: true
+
+supply_chain: testing
+
+
+ootb_supply_chain_testing:
+  registry:
+    server: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+    # The prefix of the ECR repository
+    repository: tanzu-application-platform
+  gitops:
+    ssh_secret: ""
+
+learningcenter:
+  ingressDomain: tap-on-aws.com
+
+contour:
+  envoy:
+    service:
+      type: LoadBalancer
+
+cnrs:
+  domain_name: tap-on-aws.com
+
+tap_gui:
+  service_type: LoadBalancer
+    app:
+      baseUrl: http://tap-gui.tap-on-aws.com:7000
+    backend:
+        baseUrl: http://tap-gui.tap-on-aws.com:7000
+        cors:
+          origin: http://tap-gui.tap-on-aws.com:7000
+
+metadata_store:
+  ns_for_export_app_cert: "default"
+
+scanning:
+  metadataStore:
+    url: "" # Disable embedded integration since it's deprecated
+EOF
+
