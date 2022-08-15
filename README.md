@@ -74,12 +74,12 @@ Where:
 The eksctl cli makes creating an EKS Cluster a breeze.  Let's create an EKS in the specified region using the following command.  Creating the control plane and node group can take  take anywhere from 30-60 minutes. 
 
 ```
-eksctl create cluster --name tap-aws --managed --region $AWS_REGION --instance-types t3.large --version 1.22 --with-oidc -N 4
+eksctl create cluster --name tap-on-aws --managed --region $AWS_REGION --instance-types t3.large --version 1.22 --with-oidc -N 4
 ```
 
 Note: This step is optional if you already have an existing EKS Cluster.  Note, however that it has to be at least version 1.22 and have the OIDC authentication enabled.  To enable the OIDC provider, use the [following guide](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
 
-# Create the Container Registries
+# Create the Container Repositories
 
 ECR requires the container repositories to be precreated.   While it is [recommended](https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.2/tap/GUID-install.html#relocate-images-to-a-registry-0) to replicate the images for Tanzu Application Platform, for this guide will use images hosted on the Tanzu Network for simplicity.
 
@@ -88,3 +88,227 @@ As part of the install process, we only need a repository for the Tanzu Build Se
 ```
 aws ecr create-repository tap-build-service-images
 ```
+
+# Create IAM Roles
+
+By default, the EKS cluster will be provisioned with an [EC2 instance profile](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html) that provides read-only access for the entire EKS cluster to the ECR registery within your AWS account.
+
+However, some of the services within the Tanzu Application Platform require write access to the container repositories. In order to provide that access, we will create IAM roles and add the ARN to the K8S service accounts that those services use.  This will ensure that only the required services have access to write container images to ECR, rather than a blanket policy that applies to the entire cluster.
+
+We'll create two IAM Roles.
+
+1.  Tanzu Build Service: Gives write access to the repository to allow the service to automatically upload new images.  This is limited in scope to the service account for kpack and the dependency updater.
+2.  Workload:  Gives write access to the entire ECR registry.  This prevents you from having to update the policy for each new workload created.  For those looking for a more strict model, we'll include examples for the sample workload deployed later in the guide.
+
+We've already export the region and account id, but let's get the OIDC provider now that our cluster has been created
+
+```
+aws eks describe-cluster --name tap-on-aws --region $AWS_REGION | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///'
+```
+
+Now, we can create the policy documents we'll use to create the role.  We need two policy documents:
+
+1. Trust Policy: Limits the scope to the OIDC endpoint and the service account we'll attach the role to
+1. Permission Policy:  Limits the scope of what actions can be taken on what resources by the role.  
+
+Note that both of these policies are best effort at a least privledge model, but be sure to review to ensure if they adhere to your organizations policies.
+
+Build Service Trust Policy:
+
+```
+cat << EOF > build-service-trust-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::$ACCOUNT_ID:oidc-provider/$oidcProvider"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "$oidcProvider:aud": "sts.amazonaws.com"
+                },
+                "StringLike": {
+                    "$oidcProvider:sub": [
+                        "system:serviceaccount:kpack:controller",
+                        "system:serviceaccount:build-service:dependency-updater-controller-serviceaccount"
+                    ]
+                }
+            }
+        }
+    ]
+}
+EOF
+```
+
+Workload Trust Policy:
+
+```
+cat << EOF > workload-trust-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::$ACCOUNT_ID:oidc-provider/$oidcProvider"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "$oidcProvider:sub": "system:serviceaccount:tap-workload:default",
+                    "$oidcProvider:aud": "sts.amazonaws.com"
+                }
+            }
+        }
+    ]
+}
+EOF
+```
+Build Service Permission Policy:
+
+```
+cat << EOF > build-service-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "ecr:DescribeRegistry",
+                "ecr:GetAuthorizationToken",
+                "ecr:GetRegistryPolicy",
+                "ecr:PutRegistryPolicy",
+                "ecr:PutReplicationConfiguration",
+                "ecr:DeleteRegistryPolicy"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "TAPEcrBuildServiceGlobal"
+        },
+        {
+            "Action": [
+                "ecr:DescribeImages",
+                "ecr:ListImages",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:BatchGetImage",
+                "ecr:BatchGetRepositoryScanningConfiguration",
+                "ecr:DescribeImageReplicationStatus",
+                "ecr:DescribeImageScanFindings",
+                "ecr:DescribeRepositories",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:GetLifecyclePolicy",
+                "ecr:GetLifecyclePolicyPreview",
+                "ecr:GetRegistryScanningConfiguration",
+                "ecr:GetRepositoryPolicy",
+                "ecr:ListTagsForResource",
+                "ecr:TagResource",
+                "ecr:UntagResource",
+                "ecr:BatchDeleteImage",
+                "ecr:BatchImportUpstreamImage",
+                "ecr:CompleteLayerUpload",
+                "ecr:CreatePullThroughCacheRule",
+                "ecr:CreateRepository",
+                "ecr:DeleteLifecyclePolicy",
+                "ecr:DeletePullThroughCacheRule",
+                "ecr:DeleteRepository",
+                "ecr:InitiateLayerUpload",
+                "ecr:PutImage",
+                "ecr:PutImageScanningConfiguration",
+                "ecr:PutImageTagMutability",
+                "ecr:PutLifecyclePolicy",
+                "ecr:PutRegistryScanningConfiguration",
+                "ecr:ReplicateImage",
+                "ecr:StartImageScan",
+                "ecr:StartLifecyclePolicyPreview",
+                "ecr:UploadLayerPart",
+                "ecr:DeleteRepositoryPolicy",
+                "ecr:SetRepositoryPolicy"
+            ],
+            "Resource": [
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-build-service",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tanzu-cluster-essentials/bundle",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tanzu-application-platform/tap-packages",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload-bundle",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/*"
+            ],
+            "Effect": "Allow",
+            "Sid": "TAPEcrBuildServiceScoped"
+        }
+    ]
+}
+EOF
+```
+
+Workflow Permission Service:
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "ecr:DescribeRegistry",
+                "ecr:GetAuthorizationToken",
+                "ecr:GetRegistryPolicy",
+                "ecr:PutRegistryPolicy",
+                "ecr:PutReplicationConfiguration",
+                "ecr:DeleteRegistryPolicy"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "TAPEcrWorkloadGlobal"
+        },
+        {
+            "Action": [
+                "ecr:DescribeImages",
+                "ecr:ListImages",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:BatchGetImage",
+                "ecr:BatchGetRepositoryScanningConfiguration",
+                "ecr:DescribeImageReplicationStatus",
+                "ecr:DescribeImageScanFindings",
+                "ecr:DescribeRepositories",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:GetLifecyclePolicy",
+                "ecr:GetLifecyclePolicyPreview",
+                "ecr:GetRegistryScanningConfiguration",
+                "ecr:GetRepositoryPolicy",
+                "ecr:ListTagsForResource",
+                "ecr:TagResource",
+                "ecr:UntagResource",
+                "ecr:BatchDeleteImage",
+                "ecr:BatchImportUpstreamImage",
+                "ecr:CompleteLayerUpload",
+                "ecr:CreatePullThroughCacheRule",
+                "ecr:CreateRepository",
+                "ecr:DeleteLifecyclePolicy",
+                "ecr:DeletePullThroughCacheRule",
+                "ecr:DeleteRepository",
+                "ecr:InitiateLayerUpload",
+                "ecr:PutImage",
+                "ecr:PutImageScanningConfiguration",
+                "ecr:PutImageTagMutability",
+                "ecr:PutLifecyclePolicy",
+                "ecr:PutRegistryScanningConfiguration",
+                "ecr:ReplicateImage",
+                "ecr:StartImageScan",
+                "ecr:StartLifecyclePolicyPreview",
+                "ecr:UploadLayerPart",
+                "ecr:DeleteRepositoryPolicy",
+                "ecr:SetRepositoryPolicy"
+            ],
+            "Resource": [
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload-bundle",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/*"
+            ],
+            "Effect": "Allow",
+            "Sid": "TAPEcrWorkloadScoped"
+        }
+    ]
+}
+EOF
+```
+
