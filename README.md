@@ -1,5 +1,3 @@
-{{toc}}
-
 # Introduction
 
 With the introduction of Tanzu Application Platform version 1.2, VMware and Amazon partnered to create the [VMware Tanzu Application Platform on AWS Cloud Quick Start](https://aws.amazon.com/quickstart/architecture/vmware-tanzu-application-platform/).  This Quick Start, allows you to get started building applications with the Tanzu Application Platform in the fastest way available by deploying the infrastructure required and the Tanzu Application Platform on the AWS Cloud.
