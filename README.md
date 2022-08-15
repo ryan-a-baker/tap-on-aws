@@ -86,7 +86,7 @@ ECR requires the container repositories to be precreated.   While it is [recomme
 As part of the install process, we only need a repository for the Tanzu Build Service images.  To create a repository, run the following command:
 
 ```
-aws ecr create-repository tap-build-service-images
+aws ecr create-repository tap-build-service
 ```
 
 # Create IAM Roles
@@ -144,7 +144,6 @@ EOF
 ```
 
 Workload Trust Policy:
-
 ```
 cat << EOF > workload-trust-policy.json
 {
@@ -167,6 +166,7 @@ cat << EOF > workload-trust-policy.json
 }
 EOF
 ```
+
 Build Service Permission Policy:
 
 ```
@@ -227,12 +227,7 @@ cat << EOF > build-service-policy.json
                 "ecr:SetRepositoryPolicy"
             ],
             "Resource": [
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-build-service",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tanzu-cluster-essentials/bundle",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tanzu-application-platform/tap-packages",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload-bundle",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/*"
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tap-build-service"
             ],
             "Effect": "Allow",
             "Sid": "TAPEcrBuildServiceScoped"
@@ -300,9 +295,9 @@ Workflow Permission Service:
                 "ecr:SetRepositoryPolicy"
             ],
             "Resource": [
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload-bundle",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/*"
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/tanzu-java-web-app",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/tanzu-java-web-app-bundle",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/*"
             ],
             "Effect": "Allow",
             "Sid": "TAPEcrWorkloadScoped"
