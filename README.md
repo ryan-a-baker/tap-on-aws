@@ -40,6 +40,8 @@ Note that you will need your account ID during the guide.
 
 The images used for the Tanzu Application Platform are hosted on the [Tanzu Network](https://network.pivotal.io/).  You will need an account to log in.
 
+You'll also want to ensure that you accept all the required [End User Licenses Agreements](https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.2/tap/GUID-install-tanzu-cli.html#accept-the-end-user-license-agreements-0).
+
 ## AWS CLI
 
 This walkthrough will use the AWS CLI to both query and configure resources in AWS such as IAM roles.
@@ -51,6 +53,12 @@ To install the AWS CLI, use the [following guide](https://docs.aws.amazon.com/cl
 The EKSCTL command line makes managing the lifecycle of EKS clusters very simple.  This guide will use it to create clusters.
 
 To install the eksctl cli, use the [following guide](https://eksctl.io/introduction/#installation).
+
+## Tanzu CLI
+
+The Tanzu CLI will enable us to install and interact with the Tanzu Application Platform.
+
+To install the Tanzu, use the [following guide](https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.2/tap/GUID-install-tanzu-cli.html#cli-and-plugin)
 
 # Export Environment Variables
 
@@ -307,3 +315,48 @@ Workflow Permission Service:
 EOF
 ```
 
+Now that we've created the policy documents, we can use the CLI to actually create the roles in your AWS account.
+
+Build Service Role
+```
+aws iam create-role --role-name tap-build-service --assume-role-policy-document file://build-service-trust-policy.json
+aws iam put-role-policy --role-name tap-build-service --policy-name tapBuildSerivcePolicy --policy-document file://build-service-policy.json
+```
+
+Workload Role
+```
+aws iam create-role --role-name tap-workload --assume-role-policy-document file://workload-trust-policy.json
+aws iam put-role-policy --role-name tap-workload --policy-name tapBuildSerivcePolicy --policy-document file://workload-policy.json
+```
+
+# Tanzu Application Platform Pre-Requesites
+
+Before we install the Tanzu Application Platform, we to install the Cluster Essentials and set up the credentials for the Tanzu Network to be able to pull images.
+
+Follow the [guide](https://docs.vmware.com/en/Cluster-Essentials-for-VMware-Tanzu/1.2/cluster-essentials/GUID-deploy.html) to install cluster essentials to the EKS Cluster.
+
+Next, let's install the Tanzu Application Platform package.  First, let's set the variables to use:
+
+```
+export INSTALL_REGISTRY_USERNAME=<tanzu-net-username>
+export INSTALL_REGISTRY_PASSWORD=<tanzu-net-password>
+export TAP_VERSION=1.2.0
+export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
+```
+
+Then we add a secret to be able to authenticate to tanzu network to install the Tanzu Application platform.
+
+```
+tanzu secret registry add tap-registry \
+  --username ${INSTALL_REGISTRY_USERNAME} --password ${INSTALL_REGISTRY_PASSWORD} \
+  --server ${INSTALL_REGISTRY_HOSTNAME} \
+  --export-to-all-namespaces --yes --namespace tap-install
+```
+
+Finally, install the package
+
+```
+tanzu package repository add tanzu-tap-repository \
+  --url ${INSTALL_REGISTRY_HOSTNAME}/TARGET-REPOSITORY/tap-packages:$TAP_VERSION \
+  --namespace tap-install
+```
