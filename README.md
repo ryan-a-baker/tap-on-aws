@@ -100,7 +100,7 @@ We'll create two IAM Roles.
 1.  Tanzu Build Service: Gives write access to the repository to allow the service to automatically upload new images.  This is limited in scope to the service account for kpack and the dependency updater.
 2.  Workload:  Gives write access to the entire ECR registry.  This prevents you from having to update the policy for each new workload created.  For those looking for a more strict model, we'll include examples for the sample workload deployed later in the guide.
 
-We've already export the region and account id, but let's get the OIDC provider now that our cluster has been created
+We've already exported the region and account id, but let's get the OIDC provider now that our cluster has been created:
 
 ```
 aws eks describe-cluster --name tap-on-aws --region $AWS_REGION | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///'
@@ -111,7 +111,7 @@ Now, we can create the policy documents we'll use to create the role.  We need t
 1. Trust Policy: Limits the scope to the OIDC endpoint and the service account we'll attach the role to
 1. Permission Policy:  Limits the scope of what actions can be taken on what resources by the role.  
 
-Note that both of these policies are best effort at a least privledge model, but be sure to review to ensure if they adhere to your organizations policies.
+**Note** Both of these policies are best effort at a least privledge model, but be sure to review to ensure if they adhere to your organizations policies.
 
 Build Service Trust Policy:
 
