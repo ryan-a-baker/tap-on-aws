@@ -2,4 +2,4 @@ build-service-policy.json
 build-service-trust-policy.json
 workload-policy.json
 workload-trust-policy.json
-tap-on-aws.yaml
+aws-values.yaml
