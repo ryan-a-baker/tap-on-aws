@@ -1,7 +1,7 @@
 # ACCOUNT_ID
 # AWS_REGION
 
-oidcProvider=$(aws eks describe-cluster --name tap-on-aws-$AWS_REGION --region $AWS_REGION | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
+oidcProvider=$(aws eks describe-cluster --name tap-on-aws --region $AWS_REGION | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
 cat << EOF > build-service-trust-policy.json
 {
     "Version": "2012-10-17",
