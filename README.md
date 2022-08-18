@@ -65,7 +65,7 @@ To install the Tanzu, use the [following guide](https://docs.vmware.com/en/VMwar
 Some variables are used throughout the guide, to simplify the process and minimize the opportunity for errors, let's export these variables.
 
 ```
-export ACCOUNT_ID=0123-4567-8901
+export ACCOUNT_ID=012345678901
 export AWS_REGION=us-west-2
 ```
 
@@ -120,7 +120,7 @@ In order to simplify this guide, we'll use a script to create these policy docum
 To run the script, do the following:
 
 ```
-curl -o https://raw.githubusercontent.com/ryan-a-baker/tap-on-aws/master/create-iam-roles.sh
+curl -O https://raw.githubusercontent.com/ryan-a-baker/tap-on-aws/master/create-iam-roles.sh
 chmod u+x create-iam-roles.sh
 ./create-iam-roles.sh
 ```
@@ -140,9 +140,10 @@ export TAP_VERSION=1.2.0
 export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
 ```
 
-Then we add a secret to be able to authenticate to tanzu network to install the Tanzu Application platform.
+Then we create the tap-install namepspace and add a secret to be able to authenticate to Tanzu Network to install the Tanzu Application platform.
 
 ```
+kubectl create namespace tap-install
 tanzu secret registry add tap-registry \
   --username ${INSTALL_REGISTRY_USERNAME} --password ${INSTALL_REGISTRY_PASSWORD} \
   --server ${INSTALL_REGISTRY_HOSTNAME} \
@@ -153,7 +154,7 @@ Finally, install the package
 
 ```
 tanzu package repository add tanzu-tap-repository \
-  --url ${INSTALL_REGISTRY_HOSTNAME}/TARGET-REPOSITORY/tap-packages:$TAP_VERSION \
+  --url ${INSTALL_REGISTRY_HOSTNAME}/tanzu-application-platform/tap-packages:$TAP_VERSION \
   --namespace tap-install
 ```
 
@@ -163,21 +164,20 @@ Before we install the Tanzu Application Platform, we need to generate the config
 
 Let's build the configuration file and populate it with variables.
 
-cat << EOF > build-service-policy.json
+cat << EOF > aws-values.yaml
 profile: full
 ceip_policy_disclosed: true
 
 buildservice:
-  kp_default_repository: $ACCOUND_ID.dkr.ecr.$AWS_REGION.amazonaws.com/tbs
+  kp_default_repository: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/tap-build-service
   # Specify the ARN created earlier for the build service
-  kp_default_repository_aws_iam_role_arn: "arn:aws:iam::$ACCOUND_ID:role/tap-build-service"
+  kp_default_repository_aws_iam_role_arn: "arn:aws:iam::$ACCOUNT_ID:role/tap-build-service"
 
 ootb_templates:
   # Allow the config writer service to use cloud based iaas authentication
   iaas_auth: true
 
 supply_chain: testing
-
 
 ootb_supply_chain_testing:
   registry:
