@@ -65,7 +65,7 @@ To install the Tanzu, use the [following guide](https://docs.vmware.com/en/VMwar
 Some variables are used throughout the guide, to simplify the process and minimize the opportunity for errors, let's export these variables.
 
 ```
-export ACCOUNT_ID=12346789
+export ACCOUNT_ID=0123-4567-8901
 export AWS_REGION=us-west-2
 ```
 
@@ -94,7 +94,7 @@ ECR requires the container repositories to be precreated.   While it is [recomme
 As part of the install process, we only need a repository for the Tanzu Build Service images.  To create a repository, run the following command:
 
 ```
-aws ecr create-repository tap-build-service
+aws ecr create-repository --repository-name tap-build-service --region $AWS_REGION
 ```
 
 # Create IAM Roles
@@ -111,7 +111,7 @@ We'll create two IAM Roles.
 We've already exported the region and account id, but let's get the OIDC provider now that our cluster has been created:
 
 ```
-aws eks describe-cluster --name tap-on-aws --region $AWS_REGION | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///'
+oidcProvider=$(aws eks describe-cluster --name tap-on-aws --region $AWS_REGION | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
 ```
 
 Now, we can create the policy documents we'll use to create the role.  We need two policy documents:
@@ -136,7 +136,7 @@ cat << EOF > build-service-trust-policy.json
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
                 "StringEquals": {
-                    "$oidcProvider:aud": "sts.amazonaws.com"
+                    "$oidcProvider\:aud": "sts.amazonaws.com"
                 },
                 "StringLike": {
                     "$oidcProvider:sub": [
@@ -247,6 +247,7 @@ EOF
 
 Workflow Permission Service:
 ```
+cat << EOF > workflow-policy.json
 {
     "Version": "2012-10-17",
     "Statement": [
