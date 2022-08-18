@@ -187,3 +187,14 @@ cat << EOF > workload-trust-policy.json
     ]
 }
 EOF
+
+
+# Create the Build Service Role
+aws iam create-role --role-name tap-build-service --assume-role-policy-document file://build-service-trust-policy.json
+# Attach the Policy to the Build Role
+aws iam put-role-policy --role-name tap-build-service --policy-name tapBuildSerivcePolicy --policy-document file://build-service-policy.json
+
+# Create the Workload Role
+aws iam create-role --role-name tap-workload --assume-role-policy-document file://workload-trust-policy.json
+# Attach the Policy to the Workload Role
+aws iam put-role-policy --role-name tap-workload --policy-name tapBuildSerivcePolicy --policy-document file://workload-policy.json
