@@ -82,7 +82,7 @@ Where:
 The eksctl cli makes creating an EKS Cluster a breeze.  Let's create an EKS in the specified region using the following command.  Creating the control plane and node group can take  take anywhere from 30-60 minutes. 
 
 ```
-eksctl create cluster --name tap-on-aws --managed --region $AWS_REGION --instance-types t3.large --version 1.22 --with-oidc -N 4
+eksctl create cluster --name tap-on-aws --managed --region $AWS_REGION --instance-types t3.large --version 1.22 --with-oidc -N 5
 ```
 
 Note: This step is optional if you already have an existing EKS Cluster.  Note, however that it has to be at least version 1.22 and have the OIDC authentication enabled.  To enable the OIDC provider, use the [following guide](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
@@ -169,9 +169,9 @@ profile: full
 ceip_policy_disclosed: true
 
 buildservice:
-  kp_default_repository: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/tap-build-service
+  kp_default_repository: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/tap-build-service
   # Specify the ARN created earlier for the build service
-  kp_default_repository_aws_iam_role_arn: "arn:aws:iam::$ACCOUNT_ID:role/tap-build-service"
+  kp_default_repository_aws_iam_role_arn: "arn:aws:iam::${ACCOUNT_ID}:role/tap-build-service"
 
 ootb_templates:
   # Allow the config writer service to use cloud based iaas authentication
@@ -181,7 +181,7 @@ supply_chain: testing
 
 ootb_supply_chain_testing:
   registry:
-    server: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+    server: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
     # The prefix of the ECR repository
     repository: tanzu-application-platform
   gitops:
@@ -200,12 +200,17 @@ cnrs:
 
 tap_gui:
   service_type: LoadBalancer
+  app_config:
     app:
       baseUrl: http://tap-gui.tap-on-aws.com:7000
+    catalog:
+      locations:
+        - type: url
+          target: https://GIT-CATALOG-URL/catalog-info.yaml
     backend:
-        baseUrl: http://tap-gui.tap-on-aws.com:7000
-        cors:
-          origin: http://tap-gui.tap-on-aws.com:7000
+      baseUrl: http://tap-gui.tap-on-aws.com:7000
+      cors:
+        origin: http://tap-gui.tap-on-aws.com:7000
 
 metadata_store:
   ns_for_export_app_cert: "default"
@@ -215,3 +220,8 @@ scanning:
     url: "" # Disable embedded integration since it's deprecated
 EOF
 
+# Install TAP
+
+```
+tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION -n tap-install --values-file aws-values.yaml
+```

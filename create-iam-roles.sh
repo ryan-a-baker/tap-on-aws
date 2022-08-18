@@ -85,12 +85,7 @@ cat << EOF > build-service-policy.json
                 "ecr:SetRepositoryPolicy"
             ],
             "Resource": [
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-build-service",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tanzu-cluster-essentials/bundle",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tanzu-application-platform/tap-packages",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload-bundle",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/*"
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tap-build-service"
             ],
             "Effect": "Allow",
             "Sid": "TAPEcrBuildServiceScoped"
@@ -156,9 +151,10 @@ cat << EOF > workload-policy.json
                 "ecr:SetRepositoryPolicy"
             ],
             "Resource": [
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/tap-supply-chain/tanzu-java-web-app-workload-tap-workload-bundle",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/a0b16830-175a-11ed-8bb1-0aa0e4d02691/*"
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/tanzu-java-web-app",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/tanzu-java-web-app-bundle",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform",
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/*"
             ],
             "Effect": "Allow",
             "Sid": "TAPEcrWorkloadScoped"
@@ -179,7 +175,7 @@ cat << EOF > workload-trust-policy.json
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
                 "StringEquals": {
-                    "$oidcProvider:sub": "system:serviceaccount:tap-workload:default",
+                    "$oidcProvider:sub": "system:serviceaccount:default:default",
                     "$oidcProvider:aud": "sts.amazonaws.com"
                 }
             }
