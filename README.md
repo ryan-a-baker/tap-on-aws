@@ -164,6 +164,7 @@ Before we install the Tanzu Application Platform, we need to generate the config
 
 Let's build the configuration file and populate it with variables.
 
+```
 cat << EOF > aws-values.yaml
 profile: full
 ceip_policy_disclosed: true
@@ -219,9 +220,92 @@ scanning:
   metadataStore:
     url: "" # Disable embedded integration since it's deprecated
 EOF
+```
+
+This will output a `aws-values.yaml` file.  You can review it and notice there are no credentials in the file at all.  That's because we're leveraging the IAM roles to authenticate to ECR.
 
 # Install TAP
+
+Once the values file is generated, we can use it to install the Tanzu Application Platform.  The following command will do it:
 
 ```
 tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION -n tap-install --values-file aws-values.yaml
 ```
+
+This will take 20-30 minutes.  Once completed, you will have the Tanzu Application Platform installed!
+
+# Creating your first workload
+
+Now that we have the platform installed, let's create the first workload!
+
+Before we create it, we need to configure our "developer namespace".  This is outlined in the [documentation](https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.2/tap/GUID-set-up-namespaces.html).  Since we are using IAM roles for our container registry, we do not need to set up registry secrets.  Instead, we'll specify the ARN of the role to use to authenticate to ECR.
+
+To save some time, here's a developer namespace configuration we can apply that will automatically generate the ARN of the role:
+
+```
+cat <<EOF | kubectl -n default apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tap-registry
+  annotations:
+    secretgen.carvel.dev/image-pull-secret: ""
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: e30K
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::${ACCOUNT_ID}:role/tap-workload
+imagePullSecrets:
+  - name: tap-registry
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-permit-deliverable
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: deliverable
+subjects:
+  - kind: ServiceAccount
+    name: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-permit-workload
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: workload
+subjects:
+  - kind: ServiceAccount
+    name: default
+EOF
+```
+
+Since we used the testing supply chain, we need to define the Tekton pipeline to use to test our sample application.  Use the following [documentation](https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.2/tap/GUID-getting-started-add-test-and-security.html#tekton-pipeline-config-example-3) to do so.
+
+Finally - we have to create repositories for our application, because ECR requires repositories to be created before pushing an image.  We'll create repository for both the image, as well as the bundle that's used to deploy the workload.
+
+```
+aws ecr create-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default --region $AWS_REGION
+aws ecr create-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default-bundle --region $AWS_REGION
+```
+
+Now that we have our developer workspace setup, you can deploy your workload:
+
+```
+tanzu apps workload create tanzu-java-web-app \
+  --git-repo https://github.com/sample-accelerators/tanzu-java-web-app \
+  --git-branch main \
+  --type web \
+  --label apps.tanzu.vmware.com/has-tests=true \
+  --yes
+  ```
+
