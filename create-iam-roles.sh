@@ -194,4 +194,4 @@ aws iam put-role-policy --role-name tap-build-service --policy-name tapBuildSeri
 # Create the Workload Role
 aws iam create-role --role-name tap-workload --assume-role-policy-document file://workload-trust-policy.json
 # Attach the Policy to the Workload Role
-aws iam put-role-policy --role-name tap-workload --policy-name tapBuildSerivcePolicy --policy-document file://workload-policy.json
+aws iam put-role-policy --role-name tap-workload --policy-name tapWorkload --policy-document file://workload-policy.json
