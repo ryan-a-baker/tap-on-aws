@@ -307,5 +307,5 @@ tanzu apps workload create tanzu-java-web-app \
   --type web \
   --label apps.tanzu.vmware.com/has-tests=true \
   --yes
-  ```
+```
 
