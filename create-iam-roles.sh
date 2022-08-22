@@ -151,6 +151,7 @@ cat << EOF > workload-policy.json
                 "ecr:SetRepositoryPolicy"
             ],
             "Resource": [
+                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tap-build-service",
                 "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/tanzu-java-web-app",
                 "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/tanzu-java-web-app-bundle",
                 "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform",
