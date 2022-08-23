@@ -38,7 +38,7 @@ Note that you will need your account ID during the guide.
 
 ## Tanzu Network Account
 
-The images used for the Tanzu Application Platform are hosted on the [Tanzu Network](https://network.pivotal.io/).  You will need an account to log in.
+The images used for the Tanzu Application Platform are hosted on the [Tanzu Network](https://network.tanzu.vmware.com/).  You will need an account to log in.
 
 You'll also want to ensure that you accept all the required [End User Licenses Agreements](https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.2/tap/GUID-install-tanzu-cli.html#accept-the-end-user-license-agreements-0).
 
