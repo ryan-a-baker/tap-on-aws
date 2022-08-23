@@ -169,6 +169,9 @@ cat << EOF > aws-values.yaml
 profile: full
 ceip_policy_disclosed: true
 
+shared:
+  ingress_domain: tap-on-aws.com
+
 buildservice:
   kp_default_repository: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/tap-build-service
   # Specify the ARN created earlier for the build service
@@ -188,16 +191,12 @@ ootb_supply_chain_testing:
   gitops:
     ssh_secret: ""
 
-learningcenter:
-  ingressDomain: tap-on-aws.com
+
 
 contour:
   envoy:
     service:
       type: LoadBalancer
-
-cnrs:
-  domain_name: tap-on-aws.com
 
 tap_gui:
   service_type: LoadBalancer
