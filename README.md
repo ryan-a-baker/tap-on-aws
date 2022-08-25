@@ -181,17 +181,15 @@ ootb_templates:
   # Allow the config writer service to use cloud based iaas authentication
   iaas_auth: true
 
-supply_chain: testing
+supply_chain: testing_scanning
 
-ootb_supply_chain_testing:
+ootb_supply_chain_testing_scanning:
   registry:
     server: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
     # The prefix of the ECR repository
     repository: tanzu-application-platform
   gitops:
     ssh_secret: ""
-
-
 
 contour:
   envoy:
@@ -307,4 +305,3 @@ tanzu apps workload create tanzu-java-web-app \
   --label apps.tanzu.vmware.com/has-tests=true \
   --yes
 ```
-

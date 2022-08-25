@@ -3,3 +3,4 @@ build-service-trust-policy.json
 workload-policy.json
 workload-trust-policy.json
 aws-values.yaml
+pipeline.yaml
