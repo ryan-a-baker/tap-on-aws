@@ -1,6 +1,3 @@
-# ACCOUNT_ID
-# AWS_REGION
-
 oidcProvider=$(aws eks describe-cluster --name tap-on-aws --region $AWS_REGION | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
 cat << EOF > build-service-trust-policy.json
 {
@@ -9,15 +6,15 @@ cat << EOF > build-service-trust-policy.json
         {
             "Effect": "Allow",
             "Principal": {
-                "Federated": "arn:aws:iam::$ACCOUNT_ID:oidc-provider/$oidcProvider"
+                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/${oidcProvider}"
             },
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
                 "StringEquals": {
-                    "$oidcProvider:aud": "sts.amazonaws.com"
+                    "${oidcProvider}:aud": "sts.amazonaws.com"
                 },
                 "StringLike": {
-                    "$oidcProvider:sub": [
+                    "${oidcProvider}:sub": [
                         "system:serviceaccount:kpack:controller",
                         "system:serviceaccount:build-service:dependency-updater-controller-serviceaccount"
                     ]
@@ -85,7 +82,8 @@ cat << EOF > build-service-policy.json
                 "ecr:SetRepositoryPolicy"
             ],
             "Resource": [
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tap-build-service"
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tap-build-service",
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tap-images"
             ],
             "Effect": "Allow",
             "Sid": "TAPEcrBuildServiceScoped"
@@ -151,11 +149,11 @@ cat << EOF > workload-policy.json
                 "ecr:SetRepositoryPolicy"
             ],
             "Resource": [
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tap-build-service",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/tanzu-java-web-app",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/tanzu-java-web-app-bundle",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform",
-                "arn:aws:ecr:$AWS_REGION:$ACCOUNT_ID:repository/tanzu-application-platform/*"
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tap-build-service",
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform/tanzu-java-web-app",
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform/tanzu-java-web-app-bundle",
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform",
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform/*"
             ],
             "Effect": "Allow",
             "Sid": "TAPEcrWorkloadScoped"
@@ -171,13 +169,13 @@ cat << EOF > workload-trust-policy.json
         {
             "Effect": "Allow",
             "Principal": {
-                "Federated": "arn:aws:iam::$ACCOUNT_ID:oidc-provider/$oidcProvider"
+                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/${oidcProvider}"
             },
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
                 "StringEquals": {
-                    "$oidcProvider:sub": "system:serviceaccount:default:default",
-                    "$oidcProvider:aud": "sts.amazonaws.com"
+                    "${oidcProvider}:sub": "system:serviceaccount:default:default",
+                    "${oidcProvider}:aud": "sts.amazonaws.com"
                 }
             }
         }
@@ -189,7 +187,7 @@ EOF
 # Create the Build Service Role
 aws iam create-role --role-name tap-build-service --assume-role-policy-document file://build-service-trust-policy.json
 # Attach the Policy to the Build Role
-aws iam put-role-policy --role-name tap-build-service --policy-name tapBuildSerivcePolicy --policy-document file://build-service-policy.json
+aws iam put-role-policy --role-name tap-build-service --policy-name tapBuildServicePolicy --policy-document file://build-service-policy.json
 
 # Create the Workload Role
 aws iam create-role --role-name tap-workload --assume-role-policy-document file://workload-trust-policy.json
